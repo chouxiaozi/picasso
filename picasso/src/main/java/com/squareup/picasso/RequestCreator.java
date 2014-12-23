@@ -84,6 +84,7 @@ public class RequestCreator {
   private int placeholderResId;
   private int errorResId;
   private int memoryPolicy;
+  private int networkPolicy;
   private Drawable placeholderDrawable;
   private Drawable errorDrawable;
   private Object tag;
@@ -346,6 +347,23 @@ public class RequestCreator {
     return this;
   }
 
+  /** TODO */
+  public RequestCreator networkPolicy(NetworkPolicy policy, NetworkPolicy... additional) {
+    if (policy == null) {
+      throw new IllegalArgumentException("Network policy cannot be null.");
+    }
+    this.networkPolicy |= policy.index;
+    if (additional != null && additional.length > 0) {
+      for (NetworkPolicy networkPolicy : additional) {
+        if (networkPolicy == null) {
+          throw new IllegalArgumentException("Network policy cannot be null.");
+        }
+        this.networkPolicy |= networkPolicy.index;
+      }
+    }
+    return this;
+  }
+
   /** Disable brief fade in of images loaded from the disk cache or network. */
   public RequestCreator noFade() {
     noFade = true;
@@ -372,7 +390,7 @@ public class RequestCreator {
     Request finalData = createRequest(started);
     String key = createKey(finalData, new StringBuilder());
 
-    Action action = new GetAction(picasso, finalData, memoryPolicy, key, tag);
+    Action action = new GetAction(picasso, finalData, memoryPolicy, networkPolicy, tag, key);
     return forRequest(picasso, picasso.dispatcher, picasso.cache, picasso.stats, action).hunt();
   }
 
@@ -397,7 +415,7 @@ public class RequestCreator {
       Request request = createRequest(started);
       String key = createKey(request, new StringBuilder());
 
-      Action action = new FetchAction(picasso, request, memoryPolicy, key, tag);
+      Action action = new FetchAction(picasso, request, memoryPolicy, networkPolicy, tag, key);
       picasso.submit(action);
     }
   }
@@ -479,8 +497,8 @@ public class RequestCreator {
     target.onPrepareLoad(setPlaceholder ? getPlaceholderDrawable() : null);
 
     Action action =
-        new TargetAction(picasso, target, request, memoryPolicy, errorResId, errorDrawable,
-            requestKey, tag);
+        new TargetAction(picasso, target, request, memoryPolicy, networkPolicy, errorDrawable,
+            requestKey, tag, errorResId);
     picasso.enqueueAndSubmit(action);
   }
 
@@ -512,7 +530,7 @@ public class RequestCreator {
 
     RemoteViewsAction action =
         new NotificationAction(picasso, request, remoteViews, viewId, notificationId, notification,
-            memoryPolicy, errorResId, key, tag);
+            memoryPolicy, networkPolicy, key, tag, errorResId);
 
     performRemoteViewInto(action);
   }
@@ -544,7 +562,7 @@ public class RequestCreator {
 
     RemoteViewsAction action =
         new AppWidgetAction(picasso, request, remoteViews, viewId, appWidgetIds, memoryPolicy,
-            errorResId, key, tag);
+            networkPolicy, key, tag, errorResId);
 
     performRemoteViewInto(action);
   }
@@ -623,8 +641,8 @@ public class RequestCreator {
     }
 
     Action action =
-        new ImageViewAction(picasso, target, request, memoryPolicy, noFade, errorResId,
-            errorDrawable, requestKey, tag, callback);
+        new ImageViewAction(picasso, target, request, memoryPolicy, networkPolicy, errorResId,
+            errorDrawable, requestKey, tag, callback, noFade);
 
     picasso.enqueueAndSubmit(action);
   }
